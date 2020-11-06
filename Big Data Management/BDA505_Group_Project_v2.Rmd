@@ -52,8 +52,8 @@ In order to access AWS S3 Bucket authentication is needed. The connection set-up
 
 ```{python}
 
-ACCESS_KEY = "AKIAZ6FGTBKCHDYTL73P"
-SECRET_KEY = "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"
+ACCESS_KEY = ""
+SECRET_KEY = ""
 
 s3 = boto3.client(
 	's3',
