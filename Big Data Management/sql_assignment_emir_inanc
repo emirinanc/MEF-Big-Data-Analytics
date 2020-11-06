@@ -1,0 +1,317 @@
+
+DIRECTIVES:
+
+--You are required to write 4 SQL SELECT statements satisfying the following conditions:
+-- At least one of the queries should incorporate a single or multiple 
+--"WITH" (CTE) statements(s)
+-- At least one of the queries should incorporate a subquery
+-- At least one of the queries should have a GROUP BY and HAVING caluses
+-- At least two of the queries should incorporate 
+--JOINS (LEFT, RIGHT, INNER, FULL) of two or more tables
+-- All queries should have at least two logical conditions in 
+--WHERE clauses (note that the logical conditions can be in any part of the statement - WITH queries, subqueries, etc - and can be in separate parts - e.g. one in WITH query, the other in the main query)
+-- All queries should have at least one ordering field with an 
+--ORDER BY clause in the main statement
+--Each query should return at most 100 records (you can use LIMIT for that)
+--The purpose or rationale of the query 
+--(what the query is meant to do) should be provided clearly in English before each query 
+--The output of each query should be provided along
+
+DB USED: world.sql from pgfoundry
+
+
+QUERIES:
+
+-- Let's attempt to find the rural population of the countries 
+-- by substracting total population of cities for a given country from country population
+WITH pop_total_cities AS (
+SELECT countrycode, SUM(population) as sum_pop FROM city
+WHERE countrycode IS NOT NULL
+GROUP BY countrycode 
+)
+
+SELECT ct.name, ct.code, ct.population,ptc.sum_pop, (ct.population - ptc.sum_pop) rural_pop
+FROM country as ct
+LEFT JOIN pop_total_cities ptc ON ct.code = ptc.countrycode
+WHERE ct.population > 0
+ORDER BY ct.population DESC
+LIMIT 100
+
+| name                                  | code | population | sum\_pop  | rural\_pop |
+|---------------------------------------|------|------------|-----------|------------|
+| China                                 | CHN  | 1277558000 | 175953614 | 1101604386 |
+| India                                 | IND  | 1013662000 | 123298526 | 890363474  |
+| United States                         | USA  | 278357000  | 78625774  | 199731226  |
+| Indonesia                             | IDN  | 212107000  | 37485695  | 174621305  |
+| Brazil                                | BRA  | 170115000  | 85876862  | 84238138   |
+| Pakistan                              | PAK  | 156483000  | 31546745  | 124936255  |
+| Russian Federation                    | RUS  | 146934000  | 69150700  | 77783300   |
+| Bangladesh                            | BGD  | 129155000  | 8569906   | 120585094  |
+| Japan                                 | JPN  | 126714000  | 77965107  | 48748893   |
+| Nigeria                               | NGA  | 111506000  | 17366900  | 94139100   |
+| Mexico                                | MEX  | 98881000   | 59752521  | 39128479   |
+| Germany                               | DEU  | 82164700   | 26245483  | 55919217   |
+| Vietnam                               | VNM  | 79832000   | 9364813   | 70467187   |
+| Philippines                           | PHL  | 75967000   | 30934791  | 45032209   |
+| Egypt                                 | EGY  | 68470000   | 20083079  | 48386921   |
+| Iran                                  | IRN  | 67702000   | 26032990  | 41669010   |
+| Turkey                                | TUR  | 66591000   | 28327028  | 38263972   |
+| Ethiopia                              | ETH  | 62565000   | 3190334   | 59374666   |
+| Thailand                              | THA  | 61399000   | 7953161   | 53445839   |
+| United Kingdom                        | GBR  | 59623400   | 22436673  | 37186727   |
+| France                                | FRA  | 59225700   | 9244494   | 49981206   |
+| Italy                                 | ITA  | 57680000   | 15087019  | 42592981   |
+| Congo, The Democratic Republic of the | COD  | 51654000   | 9864615   | 41789385   |
+| Ukraine                               | UKR  | 50456000   | 20074000  | 30382000   |
+| South Korea                           | KOR  | 46844000   | 38999893  | 7844107    |
+| Myanmar                               | MMR  | 45611000   | 6203000   | 39408000   |
+| Colombia                              | COL  | 42321000   | 20250990  | 22070010   |
+| South Africa                          | ZAF  | 40377000   | 15196370  | 25180630   |
+| Spain                                 | ESP  | 39441700   | 16669189  | 22772511   |
+| Poland                                | POL  | 38653600   | 11687431  | 26966169   |
+| Argentina                             | ARG  | 37032000   | 19996563  | 17035437   |
+| Tanzania                              | TZA  | 33517000   | 2944034   | 30572966   |
+| Algeria                               | DZA  | 31471000   | 5192179   | 26278821   |
+| Canada                                | CAN  | 31147000   | 12673840  | 18473160   |
+| Kenya                                 | KEN  | 30080000   | 3522793   | 26557207   |
+| Sudan                                 | SDN  | 29490000   | 4752187   | 24737813   |
+| Morocco                               | MAR  | 28351000   | 8757562   | 19593438   |
+| Peru                                  | PER  | 25662000   | 12147242  | 13514758   |
+| Uzbekistan                            | UZB  | 24318000   | 5183900   | 19134100   |
+| Venezuela                             | VEN  | 24170000   | 12251091  | 11918909   |
+| North Korea                           | PRK  | 24039000   | 6476751   | 17562249   |
+| Nepal                                 | NPL  | 23930000   | 1132403   | 22797597   |
+| Iraq                                  | IRQ  | 23115000   | 8926041   | 14188959   |
+| Afghanistan                           | AFG  | 22720000   | 2332100   | 20387900   |
+| Romania                               | ROM  | 22455500   | 7469006   | 14986494   |
+| Taiwan                                | TWN  | 22256000   | 13569336  | 8686664    |
+| Malaysia                              | MYS  | 22244000   | 4605141   | 17638859   |
+| Uganda                                | UGA  | 21778000   | 890800    | 20887200   |
+| Saudi Arabia                          | SAU  | 21607000   | 10636700  | 10970300   |
+| Ghana                                 | GHA  | 20212000   | 1819889   | 18392111   |
+| Mozambique                            | MOZ  | 19680000   | 3143145   | 16536855   |
+| Australia                             | AUS  | 18886000   | 11313666  | 7572334    |
+| Sri Lanka                             | LKA  | 18827000   | 1545000   | 17282000   |
+| Yemen                                 | YEM  | 18112000   | 1743700   | 16368300   |
+| Kazakstan                             | KAZ  | 16223000   | 5484200   | 10738800   |
+| Syria                                 | SYR  | 16125000   | 4477784   | 11647216   |
+| Madagascar                            | MDG  | 15942000   | 1123161   | 14818839   |
+| Netherlands                           | NLD  | 15864000   | 5180049   | 10683951   |
+| Chile                                 | CHL  | 15211000   | 9717970   | 5493030    |
+| Cameroon                              | CMR  | 15085000   | 3522554   | 11562446   |
+| CÃ´te dÂ’Ivoire                       | CIV  | 14786000   | 3191137   | 11594863   |
+| Angola                                | AGO  | 12878000   | 2561600   | 10316400   |
+| Ecuador                               | ECU  | 12646000   | 5744142   | 6901858    |
+| Burkina Faso                          | BFA  | 11937000   | 1229000   | 10708000   |
+| Zimbabwe                              | ZWE  | 11669000   | 2730420   | 8938580    |
+| Guatemala                             | GTM  | 11385000   | 1225188   | 10159812   |
+| Mali                                  | MLI  | 11234000   | 809552    | 10424448   |
+| Cuba                                  | CUB  | 11201000   | 4629925   | 6571075    |
+| Cambodia                              | KHM  | 11168000   | 805055    | 10362945   |
+| Malawi                                | MWI  | 10925000   | 914119    | 10010881   |
+| Niger                                 | NER  | 10730000   | 653857    | 10076143   |
+| Yugoslavia                            | YUG  | 10640000   | 2189507   | 8450493    |
+| Greece                                | GRC  | 10545700   | 1972843   | 8572857    |
+| Czech Republic                        | CZE  | 10278100   | 2634711   | 7643389    |
+| Belgium                               | BEL  | 10239000   | 1609322   | 8629678    |
+| Belarus                               | BLR  | 10236000   | 4741000   | 5495000    |
+| Somalia                               | SOM  | 10097000   | 1177000   | 8920000    |
+| Hungary                               | HUN  | 10043200   | 2953310   | 7089890    |
+| Portugal                              | PRT  | 9997600    | 1145011   | 8852589    |
+| Tunisia                               | TUN  | 9586000    | 1798500   | 7787500    |
+| Senegal                               | SEN  | 9481000    | 2770458   | 6710542    |
+| Zambia                                | ZMB  | 9169000    | 2473500   | 6695500    |
+| Sweden                                | SWE  | 8861400    | 2891431   | 5969969    |
+| Dominican Republic                    | DOM  | 8495000    | 2438276   | 6056724    |
+| Bolivia                               | BOL  | 8329000    | 3378644   | 4950356    |
+| Haiti                                 | HTI  | 8222000    | 1517338   | 6704662    |
+| Bulgaria                              | BGR  | 8190900    | 2696915   | 5493985    |
+| Austria                               | AUT  | 8091800    | 2384273   | 5707527    |
+| Azerbaijan                            | AZE  | 7734000    | 2464000   | 5270000    |
+| Rwanda                                | RWA  | 7733000    | 286000    | 7447000    |
+| Chad                                  | TCD  | 7651000    | 630465    | 7020535    |
+| Guinea                                | GIN  | 7430000    | 1090610   | 6339390    |
+| Switzerland                           | CHE  | 7160400    | 914200    | 6246200    |
+| Hong Kong                             | HKG  | 6782000    | 3300633   | 3481367    |
+| Burundi                               | BDI  | 6695000    | 300000    | 6395000    |
+| Honduras                              | HND  | 6485000    | 1287000   | 5198000    |
+| El Salvador                           | SLV  | 6276000    | 1138231   | 5137769    |
+| Israel                                | ISR  | 6217000    | 2813000   | 3404000    |
+| Tajikistan                            | TJK  | 6188000    | 685500    | 5502500    |
+| Benin                                 | BEN  | 6097000    | 968503    | 5128497    |
+
+
+
+
+-- Find the countries in which the population speaking the official languages is greater than the population speaking
+-- non-official languages, and find which of these countries have a GNP greater than the median gnp in country table
+
+WITH country_lang_pop AS (
+SELECT 
+cou.code, 
+cou.name, 
+cou.gnp,
+cou.population,
+SUM(DISTINCT(COALESCE(pop_off_lang.pop_off_lang, 0))) AS off_lang,
+SUM(DISTINCT(COALESCE(pop_noff_lang.pop_noff_lang, 0))) AS noff_lang
+FROM country cou
+JOIN
+(	SELECT ct.code, ct.population, cl.percentage, cl.language,
+	CAST((ct.population * percentage/100) AS int) pop_off_lang
+	FROM country ct
+	LEFT JOIN countrylanguage cl ON ct.code = cl.countrycode
+	WHERE cl.isofficial = 'true' ORDER BY ct.code) AS pop_off_lang 
+ON pop_off_lang.code = cou.code
+JOIN (
+	SELECT ct.code, ct.population, cl.percentage, cl.language,
+	CAST((ct.population * (percentage/100)) AS int) pop_noff_lang
+	FROM country ct
+	LEFT JOIN countrylanguage cl ON ct.code = cl.countrycode
+	WHERE cl.isofficial = 'false' ORDER by ct.code
+) AS pop_noff_lang
+ON pop_noff_lang.code = cou.code
+GROUP BY cou.code
+	)
+	
+SELECT country_lang_pop.code,country_lang_pop.name, country_lang_pop.gnp
+FROM country_lang_pop
+WHERE country_lang_pop.off_lang > country_lang_pop.noff_lang AND gnp > (select percentile_disc(0.5) within group (order by gnp)
+	from country)
+ORDER BY country_lang_pop.gnp
+LIMIT 100
+
+| code | name                   | gnp     |
+|------|------------------------|---------|
+| KHM  | Cambodia               | 5121    |
+| EST  | Estonia                | 5328    |
+| PRK  | North Korea            | 5332    |
+| HND  | Honduras               | 5333    |
+| AFG  | Afghanistan            | 5976    |
+| YEM  | Yemen                  | 6041    |
+| GEO  | Georgia                | 6064    |
+| BHR  | Bahrain                | 6366    |
+| LVA  | Latvia                 | 6398    |
+| JOR  | Jordan                 | 7526    |
+| ISL  | Iceland                | 8255    |
+| PRY  | Paraguay               | 8444    |
+| BOL  | Bolivia                | 8571    |
+| PAN  | Panama                 | 9131    |
+| QAT  | Qatar                  | 9472    |
+| SDN  | Sudan                  | 10162   |
+| CRI  | Costa Rica             | 10226   |
+| LTU  | Lithuania              | 10692   |
+| IRQ  | Iraq                   | 11500   |
+| BRN  | Brunei                 | 11705   |
+| SLV  | El Salvador            | 11863   |
+| BGR  | Bulgaria               | 12178   |
+| BLR  | Belarus                | 13714   |
+| UZB  | Uzbekistan             | 14194   |
+| LKA  | Sri Lanka              | 15706   |
+| DOM  | Dominican Republic     | 15846   |
+| LUX  | Luxembourg             | 16321   |
+| OMN  | Oman                   | 16904   |
+| YUG  | Yugoslavia             | 17000   |
+| LBN  | Lebanon                | 17121   |
+| GTM  | Guatemala              | 19008   |
+| SVN  | Slovenia               | 19756   |
+| ECU  | Ecuador                | 19770   |
+| TUN  | Tunisia                | 20026   |
+| HRV  | Croatia                | 20208   |
+| SVK  | Slovakia               | 20594   |
+| VNM  | Vietnam                | 21929   |
+| KWT  | Kuwait                 | 27037   |
+| BGD  | Bangladesh             | 32852   |
+| PRI  | Puerto Rico            | 34100   |
+| MAR  | Morocco                | 36124   |
+| ARE  | United Arab Emirates   | 37966   |
+| ROM  | Romania                | 38158   |
+| UKR  | Ukraine                | 42168   |
+| LBY  | Libyan Arab Jamahiriya | 44806   |
+| HUN  | Hungary                | 48267   |
+| DZA  | Algeria                | 49982   |
+| NZL  | New Zealand            | 54669   |
+| CZE  | Czech Republic         | 55017   |
+| SYR  | Syria                  | 65984   |
+| MYS  | Malaysia               | 69213   |
+| CHL  | Chile                  | 72949   |
+| EGY  | Egypt                  | 82710   |
+| VEN  | Venezuela              | 95023   |
+| ISR  | Israel                 | 97477   |
+| COL  | Colombia               | 102896  |
+| THA  | Thailand               | 116416  |
+| ZAF  | South Africa           | 116729  |
+| GRC  | Greece                 | 120724  |
+| FIN  | Finland                | 121914  |
+| NOR  | Norway                 | 145895  |
+| POL  | Poland                 | 151697  |
+| DNK  | Denmark                | 174099  |
+| MMR  | Myanmar                | 180375  |
+| TUR  | Turkey                 | 210721  |
+| AUT  | Austria                | 211860  |
+| SWE  | Sweden                 | 226492  |
+| BEL  | Belgium                | 249704  |
+| RUS  | Russian Federation     | 276608  |
+| KOR  | South Korea            | 320749  |
+| ARG  | Argentina              | 340238  |
+| AUS  | Australia              | 351182  |
+| NLD  | Netherlands            | 371362  |
+| MEX  | Mexico                 | 414972  |
+| ESP  | Spain                  | 553233  |
+| CAN  | Canada                 | 598862  |
+| BRA  | Brazil                 | 776739  |
+| CHN  | China                  | 982268  |
+| ITA  | Italy                  | 1161755 |
+| GBR  | United Kingdom         | 1378330 |
+| FRA  | France                 | 1424285 |
+| DEU  | Germany                | 2133367 |
+| JPN  | Japan                  | 3787042 |
+| USA  | United States          | 8510700 |
+
+
+
+-- find the number of countries that have life-expectancy above the country table median per conitnent
+SELECT continent, COUNT(code) number_of_countries
+FROM country
+WHERE lifeexpectancy > (select percentile_disc(0.5) within group (order by lifeexpectancy)
+	from country)
+GROUP BY continent
+ORDER BY number_of_countries
+LIMIT 10
+
+| continent     | number\_of\_countries |
+|---------------|-----------------------|
+| Africa        | 6                     |
+| South America | 9                     |
+| Oceania       | 9                     |
+| Asia          | 22                    |
+| North America | 29                    |
+| Europe        | 36                    |
+
+
+
+
+--countries with more than 5 cities and that have life-expectancy above the country table median
+WITH country_city AS(
+SELECT ct.code, ct.name AS ct_name, cy.name AS cy_name, ct.lifeexpectancy FROM country ct
+LEFT JOIN city cy ON ct.code = cy.countrycode)
+SELECT code, count(cy_name) FROM country_city
+WHERE lifeexpectancy > (select percentile_disc(0.5) within group (order by lifeexpectancy)
+	from country)
+GROUP BY code
+HAVING count(cy_name) > 10
+
+| code | count |
+|------|-------|
+| NLD  | 28    |
+| VEN  | 41    |
+| CUB  | 14    |
+| ISR  | 14    |
+| GBR  | 81    |
+| ESP  | 59    |
+| TWN  | 42    |
+| MYS  | 18    |
+| CHL  | 29    |
+| ARG  | 57    |
+| USA  | 274   |
+
+

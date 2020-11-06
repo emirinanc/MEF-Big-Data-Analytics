@@ -1,0 +1,363 @@
+---
+title: "BDA505_Group_Project"
+output: html_document
+---
+# New York Taxi Data Set
+
++ ShineRs
+- [Özge Beğde](https://www.linkedin.com/in/%C3%B6zge-be%C4%9Fde-569887aa/)
+- [Mustafa Ömer Güçlü](https://www.linkedin.com/in/mustafa-%C3%B6mer-g%C3%BC%C3%A7l%C3%BC/)
+- [Özgün Kurt](https://www.linkedin.com/in/mehmet-ozgun-kurt-bb0a867a/)
+- [Sezer Ulutaş](https://www.linkedin.com/in/sezerulutas/)
+- [Emir İnanç](https://www.linkedin.com/in/emir-abdulkadir-inanc-01ab7431/)
+
+## Introduction
+
+The NYC taxi dataset holds data of trips taken by taxis and for-hire vehicles in New York City. It can be reached at https://registry.opendata.aws/nyc-tlc-trip-records-pds/. The aim is to import a portion of taxi data ranging from 2018-01 to 2018-04 into a Amazon S3 Bucket, and then perform Exploratory Data Analysis. Firstly, functions to import the data into S3 bucket will be defined and explained. These functions were mostly inspired by the tutorial on  provided on the dataset link: "Exploring data with Python and Amazon S3 Select". The difference is that S3 select will not be relevant in the following steps. 
+
+Secondly, imported data will be assigned to pandas data frames. The data frames will be wrapped in a dictionary to enable them for independent use. The data frames will follow the format `df(month)`, e.g. df1 for data frame containing data from 2018-01 dataset. Fourthly, data manipulation and EDA will be performed over the 2018-02.
+
+[trips-2018-02.csv](https://drive.google.com/file/d/1AE3Qs3gW6CI1DIKZnge8fo6KnReF-lcl/view?usp=sharing)
+
+## Part 0: Import dependencies
+
+```{r setup, include=FALSE}
+library(reticulate)
+use_python("/Users/emirinanc/opt/anaconda3/bin/python")
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(RSQLite)
+library(sqldf)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(scales)
+```
+
+
+The modules below are necessary to run the components of this project. The examiner may need to install the boto3 package before attempting to import it. Since EDA will be done via R, R packages are needed as well.
+
+```{python}
+#python -m pip install boto3, if boto3 is not installed
+
+import boto3
+import io
+import botocore
+import pandas as pd
+
+```
+
+In order to access AWS S3 Bucket authentication is needed. The connection set-up is as follows
+
+```{python}
+
+ACCESS_KEY = "AKIAZ6FGTBKCHDYTL73P"
+SECRET_KEY = "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"
+
+s3 = boto3.client(
+	's3',
+	aws_access_key_id= ACCESS_KEY,
+	aws_secret_access_key= SECRET_KEY
+	)
+
+s3_resource = boto3.resource(
+	's3',
+	aws_access_key_id= ACCESS_KEY,
+	aws_secret_access_key= SECRET_KEY
+	)
+
+```
+## Part 1: Import NYC Taxi Data to Amazon S3 Bucket
+
+### Part 1.1: Functions to Perform the Import
+First thing first: define the function to a create the bucket to receive the datasets
+
+```{python}
+
+def create_bucket(bucket):
+    import logging
+
+    try:
+        s3.create_bucket(Bucket=bucket)
+    except botocore.exceptions.ClientError as e:
+        logging.error(e)
+        return 'Bucket ' + bucket + ' could not be created.'
+    return 'Created or already exists ' + bucket + ' bucket.'
+
+```
+
+Secondly, define a function to list existing buckets.
+
+```{python}
+
+
+def list_buckets(match=''):
+    response = s3.list_buckets()
+    if match:
+        print(f'Existing buckets containing "{match}" string:')
+    else:
+        print('All existing buckets:')
+    for bucket in response['Buckets']:
+        if match:
+            if match in bucket["Name"]:
+                print(f'  {bucket["Name"]}')
+
+```
+
+The following two functions respectively check whether the item exists in a given bucket, and if it exists transfers item from the Amazon public dataset bucket to the bucket that will contain the datasets to be used for EDA.
+
+
+```{python}
+def key_exists(bucket, key):
+    try:
+        s3_resource.Object(bucket, key).load()
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            return(False)
+        else:
+
+            raise
+    else:
+        # The key does exist.
+        return(True)
+```
+
+```{python}
+
+def copy_among_buckets(from_bucket, from_key, to_bucket, to_key):
+    if not key_exists(to_bucket, to_key):
+        s3_resource.meta.client.copy({'Bucket': from_bucket, 'Key': from_key}, 
+                                        to_bucket, to_key)        
+        print(f'File {to_key} saved to S3 bucket {to_bucket}')
+    else:
+        print(f'File {to_key} already exists in S3 bucket {to_bucket}')
+```
+
+This function provides a preview for a selected dataset to confirm that transferred items have arrived safe and sound.`
+
+```{python}
+
+def preview_csv_dataset(bucket, key, rows=10):
+    data_source = {
+            'Bucket': bucket,
+            'Key': key
+        }
+    url = s3.generate_presigned_url(
+        ClientMethod = 'get_object',
+        Params = data_source
+    )
+
+    data = pd.read_csv(url, nrows=rows)
+    return data
+    
+```
+
+### Part 1.2: Perform the Import
+
+The data is imported in three steps: 1) create the destination bucket, 2) transfer items to the destination bucket, 3) confirm that destination bucjet exists.
+
+```{python}
+
+## create the destination bucket
+create_bucket('bda-open-taxi-trip-data-analysis')
+
+## transfer items
+for month in range(1,5):
+    from_key = 'trip data/green_tripdata_2018-{0:0=2d}.csv'.format(month)
+    to_key = 'few-trips/trips-2018-{0:0=2d}.csv'.format(month)
+    copy_among_buckets(from_bucket='nyc-tlc', from_key=from_key,
+    to_bucket='bda-open-taxi-trip-data-analysis', to_key=to_key)
+
+## view the contents of the destination bucket
+list_buckets(match='bda')
+```
+
+Previewing the data from 2018-02 dataset confirms and finalizes the data import process.
+
+```{python}
+
+df = preview_csv_dataset(bucket='bda-open-taxi-trip-data-analysis', key='few-trips/trips-2018-02.csv', rows=100)
+
+df.head()
+
+```
+
+After getting data-set we make complete rdata package for observer of this document.Below code is for seamless usage of the document.
+
+```{r message=FALSE, results='hide' }
+load(url("https://github.com/MustafaOmerGuclu/R-workeR/blob/master/BDA_Group_Project_Dataset.RData?raw=true"))
+
+#vendor_id : a code indicating the provider associated with the trip record
+#passenger_count : the number of passengers in the vehicle (driver entered value)
+#pickup_longitude : date and time when the meter was engaged
+#pickup_latitude : date and time when the meter was disengaged
+#dropoff_longitude : the longitude where the meter was disengaged
+#dropoff_latitude : the latitude where the meter was disengaged
+#trip_duration : (target) duration of the trip in seconds
+```
+
+## Part 2: Prepare Imported Data for EDA
+
+```{r message=FALSE, results='hide' }
+#take the columns we analyze.
+df2 <- sqldf("SELECT VendorID,lpep_pickup_datetime,lpep_dropoff_datetime,PULocationID,
+                       DOLocationID,passenger_count,trip_distance,total_amount,payment_type FROM df")
+summary(df2)
+#two new columns for hours. Convert date.
+
+df2 %>% mutate(lpep_pickup_hour = hms(lpep_pickup_datetime),
+               lpep_dropoff_hour = hms(lpep_dropoff_datetime),
+               lpep_pickup_datetime = ymd_hms(lpep_pickup_datetime),
+               lpep_dropff_datetime = ymd_hms(lpep_dropoff_datetime))
+
+df2$lpep_pickup_hour <- format(as.POSIXct(df2$lpep_pickup_datetime) ,format = "%H:%M:%S")
+df2$lpep_dropoff_hour <- format(as.POSIXct(df2$lpep_dropoff_datetime) ,format = "%H:%M:%S")
+df2$lpep_pickup_datetime <- format(as.POSIXct(df2$lpep_pickup_datetime) ,format = "%Y/%m/%d %H-%M-%S")
+df2$lpep_pickup_datetime <- as.Date(df2$lpep_pickup_datetime)
+df2$lpep_dropff_datetime <- format(as.POSIXct(df2$lpep_dropoff_datetime) ,format = "%Y/%m/%d %H-%M-%S")
+df2$lpep_dropoff_datetime <- as.Date(df2$lpep_dropoff_datetime)
+head(df2)
+```
+
+## Part 3: EDA
+
+### Part 3.1: Distribution of Passenger Count
+
+- Taxi trips customer number distribution shows that most of the taxi trips are completed with single customer. The number of the trips significantly drops while group size gets greater.
+
+```{r message=FALSE, echo=FALSE }
+#plot for distribution of passenger count.It can be seen from the graph below, mostly 
+#1 or 2 people chose to travel by cab. Usage of more the 2 people is very rare in the dataset.
+#Choose trips has passenger more than 0.
+pass_count <- sqldf("SELECT count(VendorID) as total,passenger_count FROM df
+                    WHERE passenger_count!=0
+                    GROUP BY passenger_count")
+
+
+plot1 <- ggplot(pass_count, aes(x=passenger_count,y=total,size=passenger_count)) + 
+  geom_point( stat="identity") +scale_x_continuous( limits=c(1, 10),breaks = pretty(pass_count$passenger_count, n = 10)) + scale_y_continuous(labels = comma,breaks = pretty(pass_count$total, n = 20))+labs(subtitle="Passenger Count", title= "NewYork Taxi", caption="(based on data from XXX)", y="Count of Trip", x="Number of Passenger per Trip")
+plot1
+```
+
+
+
+### Part 3.2: Distribution of Pick-Ups by Daytime. 
+
+- Distribution of Trips for Pick Up Time shows that midday and night is the rush time intervals for picking up a taxi in New York.
+
+```{r message=FALSE, echo=FALSE }
+#categorize trips according to pickup time.
+pickup_time_df <- sqldf("SELECT count(VendorID)as total,
+  CASE
+      WHEN lpep_pickup_hour between '00:00:00' and '05:00:00' then 'late-night'
+      WHEN lpep_pickup_hour between '05:00:01' and '12:00:00' then 'morning'
+      WHEN lpep_pickup_hour between '12:00:01' and '18:00:00' then 'midday'
+      WHEN lpep_pickup_hour between '18:00:01' and '23:59:59' then 'night'
+      ELSE 0
+      END pickup_time
+      FROM df2
+      GROUP BY pickup_time")
+
+
+plot2 <- ggplot(pickup_time_df, aes(x=pickup_time,y=total,fill=pickup_time)) + 
+  geom_bar(position="dodge", stat="identity") +
+  scale_y_continuous(labels = comma)+
+  labs(subtitle="Trips for Pick Up Time", title= "NewYork Taxi",
+       caption="(based on data from XXX)", y="Count", x="Day Time")
+plot2
+```
+
+
+### Part 3.3: Distribution of Drop-offs by Daytime. 
+- Distribution of Trips for Drop Off Time shows that midday and night is parallelly to the Pick up Time and the rush time intervals are midday and night time intervals.
+
+```{r message=FALSE, echo=FALSE }
+#categorize trips according to dropff time.
+dropoff_time_df <- sqldf("SELECT count(VendorID)as total,
+  CASE
+      WHEN lpep_dropoff_hour between '00:00:00' and '05:00:00' then 'late-night'
+      WHEN lpep_dropoff_hour between '05:00:01' and '12:00:00' then 'morning'
+      WHEN lpep_dropoff_hour between '12:00:01' and '18:00:00' then 'midday'
+      WHEN lpep_dropoff_hour between '18:00:01' and '23:59:59' then 'night'
+      ELSE 0
+      END dropoff_time
+      FROM df2
+      GROUP BY dropoff_time")
+
+
+plot3 <- ggplot(dropoff_time_df, aes(x=dropoff_time,y=total,fill=dropoff_time)) + 
+  geom_bar(position="dodge", stat="identity") +
+  scale_y_continuous(labels = comma)+
+  labs(subtitle="Trips for Drop Off Time", title= "NewYork Taxi",
+       caption="(based on data from XXX)", y="Count", x="Day Time")
+plot3
+```
+
+### Part 3.4: Total Trip Distance by Daytime
+- Total distance of taxi trips from a month (2018.02) shows that midday is the highest total distance usage time interval in all. When we consider previous plots it is expected result for total distance of taxi trips by day time intervals.As we mentioned midday and night have greatest pick up and drop off counts as "rush" time intervals.
+
+-At this point we wonder,what the average trip distance distribution of day time is and there is any charactersitics relationship between day time and average distance of taxi trips.
+
+
+```{r}
+#categorize trips according to pickup time.
+pickup_distance_df <- sqldf("SELECT count(VendorID)as total,round(sum(trip_distance),2) as TRIP_DIST_SUM,
+  CASE
+      WHEN lpep_pickup_hour between '00:00:00' and '05:00:00' then 'late-night'
+      WHEN lpep_pickup_hour between '05:00:01' and '12:00:00' then 'morning'
+      WHEN lpep_pickup_hour between '12:00:01' and '18:00:00' then 'midday'
+      WHEN lpep_pickup_hour between '18:00:01' and '23:59:59' then 'night'
+      ELSE 0
+      END pickup_time
+      FROM df2
+      GROUP BY pickup_time")
+
+
+plot4 <- ggplot(pickup_distance_df, aes(x=pickup_time,y=TRIP_DIST_SUM,fill=pickup_time)) + 
+  geom_bar(position="dodge", stat="identity") +
+  scale_y_continuous(labels = comma)+
+  labs(subtitle="Trips for Pick Up Time", title= "NewYork Taxi",
+       caption="(based on data from XXX)", y="Total Trip Distance (mile)", x="Day Time")
+plot4
+```
+
+### Part 3.5: Average Trip Distance by Daytime
+
+- Average distance of taxi trips from a month (2018.02) shows that midday is the highest average distance usage time interval in all.But the trip distance average per trip almost uniform among the day time intervals.
+- There is no obvious charactersitics relationship between day time and average distance of taxi trips.
+
+```{r}
+#categorize trips according to pickup time.
+pickup_distance_df2 <- sqldf("SELECT count(VendorID)as total,round(avg(trip_distance),2) as TRIP_DIST_AVG,
+  CASE
+      WHEN lpep_pickup_hour between '00:00:00' and '05:00:00' then 'late-night'
+      WHEN lpep_pickup_hour between '05:00:01' and '12:00:00' then 'morning'
+      WHEN lpep_pickup_hour between '12:00:01' and '18:00:00' then 'midday'
+      WHEN lpep_pickup_hour between '18:00:01' and '23:59:59' then 'night'
+      ELSE 0
+      END pickup_time
+      FROM df2
+      GROUP BY pickup_time")
+
+
+plot5 <- ggplot(pickup_distance_df2, aes(x=pickup_time,y=TRIP_DIST_AVG,fill=pickup_time)) + 
+  geom_bar(position="dodge", stat="identity") +
+  scale_y_continuous(labels = comma)+
+  labs(subtitle="Trips for Pick Up Time", title= "NewYork Taxi",
+       caption="(based on data from XXX)", y="Average Trip Distance (mile)", x="Day Time")
+plot5
+```
+
+
+## Conclusion
+
+- After we parse "New York Taxi Data Set", we decide to use only 1 month and try to analyze New Yorker's taxi trips with different aspects.
+- We made a close look of the group sizes of the taxi trips,we defined time intervals in terms of 4 scale as morning,midday,night and latenight.After we get distribution of pick up and drop off numbers versus time intervals, we determined rush times by time intervals.We also looks total and average distances per time interval to understand trips' characteristics.
+
+- For further topics one can divide day time to more frequent way and create a model to predict any month taxi usage as number or distance or any combinations of the details. Our scope and time ends here.
+
+Have a great year !
+ShineRs
+
+

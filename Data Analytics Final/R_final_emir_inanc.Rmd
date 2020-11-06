@@ -1,0 +1,342 @@
+---
+title: "Final Exam"
+author: "Emir Inanc"
+date: "12/22/2019"
+output:
+  pdf_document:
+    toc: yes
+    fig_width: 5 
+    fig_height: 3
+---
+
+# Dependencies
+```{r message=FALSE, results='hide' }
+
+library(tidyverse)
+library(scales)
+library(reshape2)
+
+```
+
+# Part 1: Short & Simple
+
+## Question 1
+I believe the hype is due to a misuse of the word “Intelligence”. Intelligence is both intellectual and aesthetic and is born from the harmonious co-operation of thoughts and feelings. Moreover, intelligence is embodied; it physically interacts with the environment in which it is situated and tunes in with the patterns present within that environment. To put it in context, AI is an effective tool, an extension of our way of life, that amplifies our efficaciousness in engaging with the world that we’re living. What we may define as critical problems, global warming, acquiring sustainable food & energy are not exclusively technological problems, but involve many aspects of our engagement with the world. Although AI will not serve as a panacea for these problems, it can make our day-to-day lives better.
+
+If AI is going to make our lives better, it should become a part of our public imagination, and not live in the isolation of great mathematical minds. Thus, the issue of building AI echoes the issue of consuming AI. Consuming AI imaginatively will invigorate the program and vision of building AI. From this perspective I would give a score of 20 out of 100 for Turkey. In Turkey, the people are not ready to share in an imagination that could give birth to another way of life fully-enabled by AI. They must prepare to feel their way into this strange probabilistic tool and to imagine meaningful applications. They must also prepare to be intent on what they truly need and want as an open-society. I will give a score for the world by considering two countries making salient use of AI: US and China. For both countries I assign a score of 80 out of 100. Through AI, US and China were able to transform and reenvision the foundational ideas upon which their societies are built. The US transformed its consumerist democracy, best described in Adam Curtis’ The Century of the Self, into a neuro-marketing platform, best exemplified by Facebook and Cambridge Analytica. China was able to reenvision its totalitarian system as a dystopian social credit system. The remaining 20 points are subtracted due to the dehumanizing nature of these programs.
+
+## Question 2
+In order to judge the quality of the data and to formulate the concrete metrics the data the analyst needs to have domain specific knowledge about the research question. The data can tell any story, but a meaningful story comes under the guidance of applicable theory. Here we are tasked to distribute finite amount of funds among several projects for the greatest social benefit. Firstly, we will define evaluation criteria to assess the social benefit comparable across all projects: 1) a metric that measures social benefit in context, for instance women employment rate, 2) a financial metric to assess the economic impact of the investment, for instance return on investment, 3) the time frame of the project. Secondly, we will formulate hypotheses for each project using these metrics, for instance increasing women employment rate creates economic value and improves the quality of life. 
+
+At this point we will clean & manipulate the available data to prepare it for hypothesis testing. This process includes reformatting the data as needed, outlier detection and so on. Hypothesis testing will continue iteratively until we begin to believe that we’ve identified a pattern in the data that addresses the socio-economic dynamics behind the identified problem. We will also search for interdependencies and possible synergies among these projects and group such projects together. If we wanted to give a report at this point, the honest title of our report would be closer to “Gender Inequality - The Most Important Social Problem Backed by Data”. Finally, we will prioritize project groups that propose the highest value according to the evaluation metrics specified and prepare funding proposals. At this point the honest title of our report would be closer to “Pain Points in Our Society and Optimal Budget Allocation”.
+
+## Question 3
+The one graphy I'd like to show is the relationship between price & carat. Does the price increase as the carat increases? I will examine the relationship step by step, and present a final graph at the end.
+
+Firstly we take a scatter-plot to quickly check if there is conscpicuous relationship
+
+```{r message=FALSE, echo=FALSE}
+
+diamonds %>% 
+  filter(carat < quantile(carat,0.99)) %>% 
+  ggplot(aes(y = price,x = carat)) + 
+  geom_point(alpha = 1, size = 1)+
+  labs(x="Carat", y="Price", fill = "Cut")
+
+
+```
+\newpage
+It appears that the price vs carat follows an exponential trend. So let's scale it by log10
+
+```{r message=FALSE, echo=FALSE}
+diamonds %>% 
+  filter(carat < quantile(carat,0.99)) %>% 
+  ggplot(aes(y = price,x = carat)) + 
+  geom_point(alpha = 1, size = 1) + 
+  scale_y_continuous(trans = "log10")+
+  labs(x="Carat", y="Price", fill = "Cut")
+
+
+
+```
+
+Now it appears that the price vs carat resembles the graph of x^(1/3). Let's scale the x axis by the cube root to observe a linear trend. In order to scale the x access we need to add a new trans function using the scales library
+
+```{r message=FALSE, echo=FALSE}
+
+cuberoot_trans = function() trans_new('cuberoot',
+                                      transform = function(x) x^(1/3),
+                                      inverse = function(x) x^3)
+
+## Observe the linear trend
+diamonds %>% 
+  filter(carat < quantile(carat,0.99)) %>% 
+  ggplot(aes(y = price,x = carat)) + 
+  geom_point(alpha = 1, size = 1) + 
+  scale_y_continuous(trans = "log10") +
+  scale_x_continuous(trans = cuberoot_trans())+
+  labs(x="Carat", y="Price", fill = "Cut")
+
+
+```
+\newpage
+Let's explore if we can add extra information by introducing factors cut and clarity. We will start by cut. It appears it doesn't add any extra information; there is no clear seperation between colors.
+
+```{r message=FALSE, echo=FALSE}
+
+diamonds %>% 
+  filter(carat < quantile(carat,0.99)) %>% 
+  ggplot(aes(y = price,x = carat)) + 
+  geom_point(alpha = 1, size = 1, aes(color = cut)) + 
+  scale_y_continuous(trans = "log10") +
+  scale_x_continuous(trans = cuberoot_trans())+
+  labs(x="Carat", y="Price", fill = "Cut") +
+  ggtitle("Price vs Carat")
+
+
+```
+
+Let's try clarity. Bingo, there is a clear sepeartion between colors. This suggests that diamonds with higher clarity have a higher price. This is the one graph we would like to share with our audience
+
+```{r message=FALSE, echo=FALSE}
+diamonds %>% 
+  filter(carat < quantile(carat,0.99)) %>% 
+  ggplot(aes(y = price,x = carat)) + 
+  geom_point(alpha = 1, size = 1, aes(color = clarity)) + 
+  scale_y_continuous(trans = "log10") +
+  scale_x_continuous(trans = cuberoot_trans())+
+  labs(x="Carat", y="Price", fill = "Clarity") +
+  ggtitle("Price vs Carat")
+
+
+```
+\newpage
+
+# Part 2: Extending the Group Project
+In our investigation we found that femicide rates were closely related with the gini index. The lower the gini index, the higher the femicide rate. We also found out that the unemployment rate had a similar relationship with femicide rate. However, counterintuitively the rate of women participating in the labor force did not have an effect on the femicide rate. Here I will confirm our findings by comparing these variables against each other.
+
+Firstly let's import & process the relevant datasets:
+
+```{r message=FALSE, results='hide' }
+
+glossary<- c("Singapore", 
+             "Iceland", 
+             "Ireland", 
+             "Qatar", 
+             "Japan", 
+             "Finland", 
+             "Aruba", 
+             "Bulgaria", 
+             "Romania", 
+             "Hungary", 
+             "Turkey",
+             "Guatemala", 
+             "Honduras", 
+             "Jamaica", 
+             "Russian Federation", 
+             "El Salvador")
+
+#Country samples
+group1 <- c("Singapore", "Iceland", "Ireland","Qatar","Japan")
+group2 <- c("Finland","Aruba","Bulgaria","Romania","Hungary")
+group3 <- c("El Salvador", "Jamaica", "Honduras", "Russian Federation","Guatemala")
+turkey <- "Turkey" ## Turkey is its own group
+
+
+
+
+unemployment <- read.csv(
+  "https://raw.githubusercontent.com/pjournal/mef03g-ShineRs/master/Unemployement.csv", 
+  skip = 3,
+  stringsAsFactors = FALSE) %>%
+  plyr::rename(
+    c("Country.Name" = "country")) %>%
+  select(-matches("\\w+\\.\\w+")) %>%
+  melt(id.vars="country",
+       variable.name = "year_recorded",
+       value.name = "unemployment_rate",
+       na.rm = TRUE) %>%
+  mutate(year_recorded = as.numeric(gsub("\\w{1}(\\d{4})","\\1",year_recorded))) %>%
+  
+  mutate(group_name = case_when(country %in% group1 ~ "group1",
+                                country %in% group2 ~ "group2",
+                                country %in% group3 ~ "group3",
+                                country == turkey ~ "Turkey")) %>%
+  
+  filter(country %in% glossary)
+
+
+lfr <- read.csv(
+  "https://raw.githubusercontent.com/pjournal/mef03g-ShineRs/master/LFR.csv",
+  header=TRUE,
+  skip=1,
+  stringsAsFactors = FALSE,
+  na = "..") %>%
+  plyr::rename(
+    c("Country" = "country",
+      "X" = "XXX")) %>%
+  select(-matches("\\w+\\.\\w+|XXX"))  %>%
+  
+  melt(id.vars="country",
+       variable.name = "year_recorded",
+       value.name = "lfr",
+       na.rm = TRUE) %>%
+  mutate(year_recorded = as.numeric(gsub("\\w{1}(\\d{4})","\\1",year_recorded))) %>%
+  mutate(group_name = case_when(country %in% group1 ~ "group1",
+                                country %in% group2 ~ "group2",
+                                country %in% group3 ~ "group3",
+                                country == turkey ~ "Turkey")) %>%
+  
+  filter(country %in% glossary)
+
+
+gini<-read.csv(
+  "https://raw.githubusercontent.com/pjournal/mef03g-ShineRs/master/GINI_Data.csv",
+  header = TRUE, 
+  stringsAsFactors = FALSE, 
+  na = "..") %>%
+  
+  plyr::rename(
+    c("Country.Name" = "country")) %>%
+  
+  select(-matches("...Series.Name|Series.Code|Country.Code")) %>%
+  
+  melt(id.vars="country",
+       variable.name = "year_recorded",
+       value.name = "gini_index",
+       na.rm = TRUE) %>%
+  
+  mutate(year_recorded = as.numeric(gsub("\\w\\d{4}\\.+\\w{2}(\\d{4})\\.","\\1",
+                                         year_recorded))) %>%
+  
+  mutate(group_name = case_when(country %in% group1 ~ "group1",
+                                country %in% group2 ~ "group2",
+                                country %in% group3 ~ "group3",
+                                country == turkey ~ "Turkey"),
+         gini_index = round(as.numeric(gini_index) / 100, 2)) %>%
+  
+  filter(country %in% glossary)
+
+
+```
+
+Given our findings one would expect that the gini index and the unemployment rate would be negatively correlated: higher the unemployment rate, the lower the gini_index. The graph below shows the gini index vs unemployment rate for countries with highest femicide rates: EL salvador, Honduras, Jamaica and Russia. Each data point per country is recorded on a yearly basis. Honduras, along with the Russian federatipn, sees a decrease in the gini index as the unemployment rate increases.
+
+```{r message=FALSE, echo=FALSE}
+
+
+gini_unemp_worst <- inner_join(unemployment,gini, by = c("year_recorded","country","group_name")) %>%
+  filter(group_name == "group3") %>%
+  select(unemployment_rate,gini_index,year_recorded,country) %>%
+  arrange(year_recorded)
+
+gini_unemp_worst %>% ggplot(aes(y = gini_index,x =unemployment_rate )) +
+  geom_point(aes(color = country))+
+  theme(legend.title = element_blank()) +
+  labs(x="Unemployment Rate", y="GINI Index") +
+  ggtitle("GINI Index vs Unemployement Rate\nin Countries with the Highest Femicide Rate")
+
+
+
+
+```
+
+
+Among the countries with lowest femicide rates, data is available only for Ireland and Iceland. Ireland also sees a decrease in the gini index as the unemployment rate increases. However; Iceland serves as a counter-example: the increase in the unemployment rate corresponds to an increase in the gini index.
+
+
+```{r message=FALSE, echo=FALSE}
+
+gini_unemp_best <- inner_join(unemployment,gini, by = c("year_recorded","country","group_name")) %>%
+  filter(group_name == "group1") %>%
+  select(unemployment_rate,gini_index,year_recorded,country) %>%
+  arrange(year_recorded)
+
+gini_unemp_best %>% ggplot(aes(y = gini_index,x =unemployment_rate )) +
+  geom_point(aes(color = country))+
+  theme(legend.title = element_blank()) +
+  labs(x="Unemployment Rate", y="GINI Index") +
+  ggtitle("GINI Index vs Unemployement Rate\nin Countries with the Lowest Femicide Rate")
+
+```
+\newpage
+As unemployment rate affects femicide rate and the rate of women participating in the labor force does not, our findings imply that the rate of women participating in the labor force should stay the same with respect to the change in unemployment rate, and conversely the unemployment rate should stay the same with respect to the change in the rate of women participating in the labor force.
+
+Among the countries with the highest femicide rates, this appears to be true in Russian Federation and Jamaica, with exception of a two outliers in the case of Jamaica. For Honduras it appaers that the women participate more in the labor force as the unemployment rate increases, and for El Salvador women participate less in the labor force as unemployment rate increases.
+
+```{r message=FALSE, echo=FALSE}
+
+unemp_lfr_worst <- inner_join(unemployment,lfr, by = c("year_recorded","country","group_name")) %>%
+  filter(group_name == "group3") %>%
+  select(unemployment_rate,lfr,year_recorded,country) %>%
+  arrange(year_recorded)
+
+unemp_lfr_worst %>% ggplot(aes(y = lfr,x =unemployment_rate )) +
+  geom_point(aes(color = country))+
+  theme(legend.title = element_blank()) +
+  labs(x="Unemployment Rate", y="Rate of Females in Labor Force") +
+  ggtitle("Female Participation in Labor Force vs Unemployement Rate\nin Countries with the Highest Femicide Rate")
+
+```
+
+Our assertion appears to be true in the countries with the lowest femicide rates. For Qatar and Singapore an increase in the rate of women participating in the labor force does not correspond to a change in the unemployment rate. For Iceland, Japan and Ireland the increase in the unemployment rate do not correspond to a change in the rate of women participating in the labor force.
+
+```{r message=FALSE, echo=FALSE}
+
+unemp_lfr_best <- inner_join(unemployment,lfr, by = c("year_recorded","country","group_name")) %>%
+  filter(group_name == "group1") %>%
+  select(unemployment_rate,lfr,year_recorded,country) %>%
+  arrange(year_recorded)
+
+unemp_lfr_best %>% ggplot(aes(y = lfr,x =unemployment_rate )) +
+  geom_point(aes(color = country))+
+  theme(legend.title = element_blank()) +
+  labs(x="Unemployment Rate", y="Rate of Females in Labor Force") +
+  ggtitle("Female Participation in Labor Force vs Unemployement Rate\nin Countries with the Lowest Femicide Rate")
+
+
+```
+\newpage
+
+# Part 3: Welcome to the Real Life
+
+We will analyze the productivity of organic farming over time by geographic regions in Turkey. Producitivty measure is obtained by dividing total yield in tonnes for a given city in a given year by the sum of real production area and natural collection area in hectare. Turkey has 7 geographic regions: Marmara, Ege, Akdeniz, İç Anadolu, Karadeniz, Doğu Anadolu and Güneydoğu Anadolu. Aggregate data from Turkish Ministry of Forestry and Agriculture can be found [here](https://github.com/pjournal/mef03-emirinanc/blob/master/organik.csv). Observing the productivity trend by geographic region reveals that 3 regions saw a significant increase in productivity from 2017 to 2018. These regions are Güneydoğu Anadolu, İç Anadolu and Doğu Anadolu respectively.
+
+```{r message=FALSE, echo=FALSE}
+
+read.csv("https://raw.githubusercontent.com/pjournal/mef03-emirinanc/master/organik.csv") %>% 
+  filter(city != "KARAMAN") %>%
+  select(year, geo_group, yield_tonnes_per_hectar) %>%
+  group_by(geo_group,year) %>%
+  summarise(prod_by_group = sum(yield_tonnes_per_hectar)) %>%
+  ggplot(aes(x = year, y = prod_by_group, color = geo_group)) +
+  geom_line(size = 1.5, alpha = 0.7) +
+  scale_y_continuous(breaks = seq(0,1200,200),limits = c(0,1200))+
+  theme(legend.title = element_blank()) +
+  labs(x="Year", y="Yield (t/ha)") +
+  ggtitle("Productivity by Year")
+
+
+```
+
+
+The graph below shows the total number of farmers involved in production in Doğu Anadolu, Güneydoğu Anadolu and İç Anadolu regions over the years. On the aggregate level, it is observed that the increase in productivity from 2017 to 2018 in these three regions corresponds to a decrease in the total work force, indicating an increase in efficiency. On a regional level, it can be observed that Doğu Anadolu and İç Anadolu regions required less labor in 2018, compared to the previous year, but Güneydoğu Anadolu required more. Overall Doğu Anadolu is the least efficient region compared to İç Anadolu and Güneydoğu Anadolu as it produces significantly less per hectare with remarkably more labor. 
+
+```{r message=FALSE, echo=FALSE}
+
+read.csv("https://raw.githubusercontent.com/pjournal/mef03-emirinanc/master/organik.csv") %>%
+  filter(geo_group %in% c("dogu_anadolu", "ic_anadolu","guneydogu_anadolu")) %>%
+  select(year,geo_group,real_farmer_count) %>%
+  group_by(year,geo_group) %>%
+  summarise(work_force = sum(real_farmer_count)) %>%
+  ggplot(aes(year,work_force, fill = geo_group)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(breaks = seq(0,25000,5000),limits = c(0,25000)) +
+  theme(legend.title = element_blank()) +
+  labs(x="Year", y="Total Work Force") +
+  ggtitle("Total Work Force by Year")
+
+```
+
+
+
